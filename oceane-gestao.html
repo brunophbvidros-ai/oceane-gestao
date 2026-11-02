@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#073b66"><title>Oceane Gestão</title>
+<style>
+:root{--navy:#073b66;--blue:#0878bd;--bg:#f2f6fa;--white:#fff;--ink:#13283b;--muted:#637589;--line:#dce6ef}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:15px system-ui,-apple-system,sans-serif;color:var(--ink)}
+header{background:linear-gradient(135deg,#052b4b,#0878bd);color:white;padding:18px 16px;position:sticky;top:0;z-index:5}
+header h1{margin:0;font-size:22px}header small{opacity:.85}.wrap{max-width:1100px;margin:auto;padding:14px}
+nav{display:flex;gap:8px;overflow:auto;padding:10px 0}nav button{white-space:nowrap;border:1px solid var(--line);background:white;border-radius:10px;padding:10px 13px;color:var(--navy);font-weight:600}
+nav button.active{background:var(--navy);color:white}
+.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:16px;margin:10px 0;box-shadow:0 2px 8px #0b31500a}
+h2{margin:0 0 12px;color:var(--navy)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+label{display:block;font-size:13px;color:var(--muted);margin:8px 0 4px}input,select,textarea{width:100%;padding:11px;border:1px solid #cbd8e4;border-radius:9px;font:inherit;background:white}textarea{min-height:70px}
+button.primary{background:var(--blue);color:white;border:0;border-radius:9px;padding:11px 15px;font-weight:700;margin-top:10px}
+button.danger{background:#b42318;color:white;border:0;border-radius:8px;padding:6px 9px}
+table{width:100%;border-collapse:collapse;margin-top:12px}th,td{text-align:left;padding:9px;border-bottom:1px solid var(--line);font-size:13px}th{background:#edf5fb}
+.stat{font-size:24px;font-weight:800;color:var(--navy)}.muted{color:var(--muted)}.hidden{display:none}.scroll{overflow-x:auto}
+footer{padding:20px;text-align:center;color:var(--muted);font-size:12px}
+@media(max-width:600px){.wrap{padding:9px}.panel{padding:12px}table{min-width:500px}}
+</style></head>
+<body>
+<header><h1>🌊 Oceane Gestão</h1><small>Oceane Vidros e Esquadrias · Parnaíba/PI</small></header>
+<div class="wrap"><nav id="nav"></nav><main id="main"></main>
+<footer>Oceane Gestão · Os dados ficam salvos neste aparelho/navegador. Faça backup regularmente.</footer></div>
+<script>
+const tabs=['Painel','Clientes','Orçamentos','Obras','Estoque','Financeiro','Fornecedores','Backup'];
+let db=JSON.parse(localStorage.getItem('oceaneGestao')||'{"clients":[],"quotes":[],"jobs":[],"stock":[],"finance":[],"suppliers":[]}');
+let current='Painel';const money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+function save(){localStorage.setItem('oceaneGestao',JSON.stringify(db));render()}
+function nav(){document.querySelector('#nav').innerHTML=tabs.map(t=>`<button class="${t===current?'active':''}" onclick="current='${t}';render()">${t}</button>`).join('')}
+function form(fields,action,label){return `<form onsubmit="${action}(event)"><div class="grid">${fields}</div><button class="primary">${label}</button></form>`}
+function field(id,name,type='text',required=true){return `<div><label>${name}</label><input id="${id}" type="${type}" ${required?'required':''}></div>`}
+function list(title,arr,cols){return `<div class="panel"><h2>${title}</h2><div class="scroll"><table><thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join('')}<th></th></tr></thead><tbody>${arr.map((x,i)=>`<tr>${cols.map(c=>`<td>${c[1](x)}</td>`).join('')}<td><button class="danger" onclick="del('${titleKey(title)}',${i})">Excluir</button></td></tr>`).join('')}</tbody></table></div></div>`}
+function titleKey(t){return ({'Clientes':'clients','Orçamentos':'quotes','Obras':'jobs','Estoque':'stock','Lançamentos':'finance','Fornecedores':'suppliers'})[t]||'clients'}
+function del(k,i){if(confirm('Excluir este registro?')){db[k].splice(i,1);save()}}
+function render(){nav();let m=document.querySelector('#main');
+if(current==='Painel'){let total=db.quotes.reduce((a,x)=>a+Number(x.total||0),0),income=db.finance.filter(x=>x.type==='Entrada').reduce((a,x)=>a+Number(x.value||0),0),out=db.finance.filter(x=>x.type==='Saída').reduce((a,x)=>a+Number(x.value||0),0);
+m.innerHTML=`<div class="grid"><div class="panel"><div class="muted">Clientes</div><div class="stat">${db.clients.length}</div></div><div class="panel"><div class="muted">Orçamentos</div><div class="stat">${db.quotes.length}</div></div><div class="panel"><div class="muted">Total orçado</div><div class="stat">${money(total)}</div></div><div class="panel"><div class="muted">Saldo financeiro registrado</div><div class="stat">${money(income-out)}</div></div></div><div class="panel"><h2>Bem-vindo ao Oceane Gestão</h2><p>Cadastre clientes, gere orçamentos simples, acompanhe obras, estoque e caixa.</p><p class="muted">A versão atual salva os dados neste navegador. Não compartilha automaticamente entre aparelhos.</p></div>`}
+if(current==='Clientes'){m.innerHTML=`<div class="panel"><h2>Novo cliente</h2>${form(field('cn','Nome')+field('ct','Telefone', 'tel')+field('ce','E-mail', 'email',false)+field('ca','Endereço', 'text',false),'addClient','Salvar cliente')}</div>`+list('Clientes',db.clients,[['Nome',x=>x.name],['Telefone',x=>x.phone],['E-mail',x=>x.email||'—'],['Endereço',x=>x.address||'—']])}
+if(current==='Orçamentos'){m.innerHTML=`<div class="panel"><h2>Novo orçamento</h2>${form(field('qn','Cliente / obra')+field('qdesc','Descrição')+field('qqty','Quantidade','number')+field('qprice','Preço unitário (R$)','number'),'addQuote','Adicionar orçamento')}</div>`+list('Orçamentos',db.quotes,[['Cliente',x=>x.client],['Descrição',x=>x.desc],['Qtd.',x=>x.qty],['Unitário',x=>money(x.price)],['Total',x=>money(x.total)]])}
+if(current==='Obras'){m.innerHTML=`<div class="panel"><h2>Nova obra / pedido</h2>${form(field('jn','Cliente/obra')+field('jdesc','Serviço')+`<div><label>Status</label><select id="jstatus"><option>Em orçamento</option><option>Aguardando material</option><option>Em produção</option><option>Em instalação</option><option>Concluída</option></select></div>`,'addJob','Salvar obra')}</div>`+list('Obras',db.jobs,[['Cliente/obra',x=>x.name],['Serviço',x=>x.desc],['Status',x=>x.status]])}
+if(current==='Estoque'){m.innerHTML=`<div class="panel"><h2>Material / estoque</h2>${form(field('sn','Item')+field('sq','Quantidade','number')+field('su','Unidade (barra, peça, m²...)'),'addStock','Adicionar item')}</div>`+list('Estoque',db.stock,[['Item',x=>x.name],['Quantidade',x=>x.qty],['Unidade',x=>x.unit]])}
+if(current==='Financeiro'){m.innerHTML=`<div class="panel"><h2>Lançamento financeiro</h2>${form(`<div><label>Tipo</label><select id="ft"><option>Entrada</option><option>Saída</option></select></div>`+field('fn','Descrição')+field('fv','Valor (R$)','number'),'addFinance','Registrar')}</div>`+list('Lançamentos',db.finance,[['Tipo',x=>x.type],['Descrição',x=>x.name],['Valor',x=>money(x.value)]])}
+if(current==='Fornecedores'){m.innerHTML=`<div class="panel"><h2>Novo fornecedor</h2>${form(field('pn','Nome')+field('pp','Telefone','tel')+field('pm','Material fornecido', 'text',false),'addSupplier','Salvar fornecedor')}</div>`+list('Fornecedores',db.suppliers,[['Nome',x=>x.name],['Telefone',x=>x.phone],['Material',x=>x.material||'—']])}
+if(current==='Backup'){m.innerHTML=`<div class="panel"><h2>Backup e restauração</h2><p>Exporte os registros para guardar uma cópia.</p><button class="primary" onclick="backup()">Baixar backup JSON</button><label>Restaurar arquivo JSON</label><input type="file" accept=".json,application/json" onchange="restore(event)"><p class="muted">Restaurar substitui os dados atuais deste navegador.</p><button class="danger" onclick="if(confirm('Apagar todos os dados locais?')){localStorage.removeItem('oceaneGestao');location.reload()}">Apagar todos os dados</button></div>`}
+}
+function addClient(e){e.preventDefault();db.clients.push({name:cn.value,phone:ct.value,email:ce.value,address:ca.value});save()}
+function addQuote(e){e.preventDefault();let qty=Number(qqty.value),price=Number(qprice.value);db.quotes.push({client:qn.value,desc:qdesc.value,qty,price,total:qty*price});save()}
+function addJob(e){e.preventDefault();db.jobs.push({name:jn.value,desc:jdesc.value,status:jstatus.value});save()}
+function addStock(e){e.preventDefault();db.stock.push({name:sn.value,qty:Number(sq.value),unit:su.value});save()}
+function addFinance(e){e.preventDefault();db.finance.push({type:ft.value,name:fn.value,value:Number(fv.value)});save()}
+function addSupplier(e){e.preventDefault();db.suppliers.push({name:pn.value,phone:pp.value,material:pm.value});save()}
+function backup(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='backup-oceane-gestao.json';a.click()}
+function restore(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);save();alert('Backup restaurado')}catch{alert('Arquivo inválido')}};r.readAsText(f)}
+render();
+</script></body></html>
